@@ -11,6 +11,7 @@ import random
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import cm
+from dataGen import DataGen
 
 def selectCenters(X,k):
     Centers = np.zeros([k,X.shape[1]])
