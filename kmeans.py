@@ -71,25 +71,22 @@ def pca(x, TargetDimension) :
     return newX
 
 if __name__ == "__main__":
-    data = arff.loadarff("iris.arff")
-    D1 = pd.DataFrame(data[0])
-    columns = D1.columns.tolist()
-    X = np.array(D1)
-    X = X.astype('U13')
-    ReduceDimensions = 0
-    D1 = X[:, -1]
-    X = X[:,:-1-ReduceDimensions]
-    X = X.astype(np.float)
+    #X = DataGen.LoadIris()
+    #X = DataGen.LoadBodyFat()
+    #X,foo = DataGen.Generate3D(100,10)
+    X,foo = DataGen.Generate2D(100,10)
     [C,XC] = kmeans(X,nrOfCenters = 3)
     #XC is a dictionary where keys are indexes of centers - > example C[0] = [1,2,3,4] then XC.at(0) has 2D aggregation of points [[..][..][..]] 
     #belonging to the center
-
     #concatenate centers and points for statistics incorporated in pca algorithm
     temp = C
     for i in range(0,len(XC)):
         temp = np.concatenate((temp,XC[i]))
-    #...
-    alll = pca(temp,TargetDimension = 3)
+    if(C.shape[1]>3):
+        alll = pca(temp,TargetDimension = 3)
+    else:
+        alll = np.zeros((temp.shape[0],3))
+        alll[:,:temp.shape[1]] = temp
     #colors
     color=cm.rainbow(np.linspace(0,1,C.shape[0]))
     prevlen = len(C) #needed becouse we actualy want color differenly points from different centers
