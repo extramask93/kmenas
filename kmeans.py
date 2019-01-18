@@ -60,7 +60,7 @@ def kmeans(X,nrOfCenters):
         indices = findClosestCenter(X,distances)
         centers,cdiv = calculateNewCenters(X,centers,indices)
         if(np.array_equal(oldcenters,centers)):
-            break;
+            break
         oldcenters = centers
     return (centers,cdiv)
 def pca(x, TargetDimension) :
@@ -69,24 +69,43 @@ def pca(x, TargetDimension) :
     indexes = np.argsort(l)[::-1]
     newX = np.dot(x, p[:, indexes[0 : TargetDimension]])
     return newX
-
+def ReduceDim(X,targetDim):
+    dimNr = X.shape[1]
+    if(dimNr>targetDim):
+        X = pca(X,TargetDimension = targetDim)
+    else:
+        temp = X
+        X = np.zeros((X.shape[0],targetDim))
+        X[:,:dimNr] = temp
+    return X
+def paint(X,cl):
+    X = ReduceDim(X,3)
+    dct = dict.fromkeys(cl,X[0])
+    for i in range(0,X.shape[0]):
+        dct[cl[i]] = np.vstack((dct[cl[i]],X[i]))
+    for i in dct.keys():
+        dct[i] = dct[i][1:]
+    cc=cm.rainbow(np.linspace(0,1,len(dct.keys())))
+    fig1 = plt.figure()
+    ax1 = Axes3D(fig1)
+    for i,col in zip(dct.keys(),cc):
+        ax1.scatter(dct[i][:,0],dct[i][:,1],dct[i][:,2],c = col)
+    plt.show()
 if __name__ == "__main__":
-    #X = DataGen.LoadIris()
-    #X = DataGen.LoadBodyFat()
+    X,cl = DataGen.LoadIris()
+    #X,class = DataGen.LoadBodyFat()
     #X,foo = DataGen.Generate3D(100,10)
-    X,foo = DataGen.Generate2D(100,10)
+    #X,foo = DataGen.Generate2D(100,10)
+    paint(X,cl)
     [C,XC] = kmeans(X,nrOfCenters = 3)
+    dimNr = C.shape[1]
     #XC is a dictionary where keys are indexes of centers - > example C[0] = [1,2,3,4] then XC.at(0) has 2D aggregation of points [[..][..][..]] 
     #belonging to the center
     #concatenate centers and points for statistics incorporated in pca algorithm
     temp = C
     for i in range(0,len(XC)):
-        temp = np.concatenate((temp,XC[i]))
-    if(C.shape[1]>3):
-        alll = pca(temp,TargetDimension = 3)
-    else:
-        alll = np.zeros((temp.shape[0],3))
-        alll[:,:temp.shape[1]] = temp
+       temp = np.concatenate((temp,XC[i]))
+    alll = ReduceDim(temp,3)
     #colors
     color=cm.rainbow(np.linspace(0,1,C.shape[0]))
     prevlen = len(C) #needed becouse we actualy want color differenly points from different centers
