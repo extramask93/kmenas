@@ -55,14 +55,16 @@ def calculateNewCenters(X,C,indices):
 def kmeans(X,nrOfCenters):
     centers = selectCenters(X,nrOfCenters)
     oldcenters = centers
+    iterations = 0
     while(True):
+        iterations = iterations + 1
         distances = calculateDistances(X,centers,X.shape[1])
         indices = findClosestCenter(X,distances)
         centers,cdiv = calculateNewCenters(X,centers,indices)
         if(np.array_equal(oldcenters,centers)):
             break
         oldcenters = centers
-    return (centers,cdiv)
+    return (centers,cdiv,iterations)
 def pca(x, TargetDimension) :
     C = np.cov(np.transpose(x))
     l, p = np.linalg.eig(C)
@@ -73,13 +75,12 @@ def ReduceDim(X,targetDim):
     dimNr = X.shape[1]
     if(dimNr>targetDim):
         X = pca(X,TargetDimension = targetDim)
-    else:
-        temp = X
-        X = np.zeros((X.shape[0],targetDim))
-        X[:,:dimNr] = temp
+    temp = X
+    X = np.zeros((X.shape[0],dimNr))
+    X[:,:targetDim] = temp
     return X
-def paint(X,cl):
-    X = ReduceDim(X,3)
+def paint(X,cl,dim):
+    X = ReduceDim(X,dim)
     dct = dict.fromkeys(cl,X[0])
     for i in range(0,X.shape[0]):
         dct[cl[i]] = np.vstack((dct[cl[i]],X[i]))
@@ -87,34 +88,46 @@ def paint(X,cl):
         dct[i] = dct[i][1:]
     cc=cm.rainbow(np.linspace(0,1,len(dct.keys())))
     fig1 = plt.figure()
-    ax1 = Axes3D(fig1)
-    for i,col in zip(dct.keys(),cc):
-        ax1.scatter(dct[i][:,0],dct[i][:,1],dct[i][:,2],c = col)
+    if(dim == 3):
+        ax1 = Axes3D(fig1)
+        for i,col in zip(dct.keys(),cc):
+            ax1.scatter(dct[i][:,0],dct[i][:,1],dct[i][:,2],c = col)
+    else:
+        for i,col in zip(dct.keys(),cc):
+            plt.scatter(dct[i][:,0],dct[i][:,1],c = col)
+    plt.show()
+def paintWithCenter(C,XC,alll,dim):
+    color=cm.rainbow(np.linspace(0,1,C.shape[0]))
+    prevlen = len(C) #needed becouse we actualy want color differenly points from different centers
+    if(dim == 3):
+        fig = plt.figure()
+        ax = Axes3D(fig)
+        for i in range(0,len(C)):
+            indexa = prevlen
+            indexb = indexa + len(XC[i])
+            ax.scatter(alll[i][0],alll[i][1],alll[i][2], marker=r'$\clubsuit$',c = 'black',s = 300,zorder=10)
+            ax.scatter(alll[indexa:indexb,0],alll[indexa:indexb,1],alll[indexa:indexb,2], '*',c = color[i])
+            prevlen = indexb
+    else:
+        for i in range(0,len(C)):
+            indexa = prevlen
+            indexb = indexa + len(XC[i])
+            plt.scatter(alll[i][0],alll[i][1], marker=r'$\clubsuit$',c = 'black',s = 300,zorder=10)
+            plt.scatter(alll[indexa:indexb,0],alll[indexa:indexb,1], marker = '*',c = color[i])
+            prevlen = indexb
     plt.show()
 if __name__ == "__main__":
+    dim = 2 # reduce dimensions to...
     X,cl = DataGen.LoadIris()
-    #X,class = DataGen.LoadBodyFat()
-    #X,foo = DataGen.Generate3D(100,10)
-    #X,foo = DataGen.Generate2D(100,10)
-    paint(X,cl)
-    [C,XC] = kmeans(X,nrOfCenters = 3)
-    dimNr = C.shape[1]
-    #XC is a dictionary where keys are indexes of centers - > example C[0] = [1,2,3,4] then XC.at(0) has 2D aggregation of points [[..][..][..]] 
-    #belonging to the center
-    #concatenate centers and points for statistics incorporated in pca algorithm
+    #X,cl = DataGen.LoadPulsar() #will take a bit, set centers to 2
+    #X,cl = DataGen.Generate4D(100,100)
+    #X,foo = DataGen.Generate3D(200,80)
+    #paint(X,cl,dim)
+    [C,XC,ilosc_iteracji] = kmeans(X,nrOfCenters = 3)
+    print(ilosc_iteracji)
     temp = C
     for i in range(0,len(XC)):
        temp = np.concatenate((temp,XC[i]))
-    alll = ReduceDim(temp,3)
-    #colors
-    color=cm.rainbow(np.linspace(0,1,C.shape[0]))
-    prevlen = len(C) #needed becouse we actualy want color differenly points from different centers
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    for i in range(0,len(C)):
-        indexa = prevlen
-        indexb = indexa + len(XC[i])
-        ax.scatter(alll[i][0],alll[i][1],alll[i][2], marker='^',c = color[i],s = 100)
-        ax.scatter(alll[indexa:indexb,0],alll[indexa:indexb,1],alll[indexa:indexb,2], '*',c = color[i])
-        prevlen = indexb 
-    plt.show()
+    alll = ReduceDim(temp,dim)
+    paintWithCenter(C,XC,alll,dim)
+
